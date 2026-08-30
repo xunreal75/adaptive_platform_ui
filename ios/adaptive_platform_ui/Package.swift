@@ -11,11 +11,27 @@ let package = Package(
     products: [
         .library(name: "adaptive-platform-ui", targets: ["adaptive_platform_ui"])
     ],
-    dependencies: [],
+    dependencies: [
+        .package(name: "FlutterFramework", path: "../FlutterFramework")
+    ],
     targets: [
         .target(
             name: "adaptive_platform_ui",
-            dependencies: []
+            dependencies: [
+                .product(name: "FlutterFramework", package: "FlutterFramework")
+            ],
+            resources: [
+                // TODO: If your plugin requires a privacy manifest
+                // (e.g. if it uses any required reason APIs), update the PrivacyInfo.xcprivacy file
+                // to describe your plugin's privacy impact, and then uncomment this line.
+                // For more information, visit:
+                // https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
+                // .process("PrivacyInfo.xcprivacy"),
+
+                // TODO: If you have other resources that need to be bundled with your plugin, refer to
+                // the following instructions to add them:
+                // https://developer.apple.com/documentation/xcode/bundling-resources-with-a-swift-package
+            ]
         )
     ]
 )
