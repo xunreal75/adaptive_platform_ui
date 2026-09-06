@@ -230,7 +230,7 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
 
                 if let btn = button {
                     btn.tag = index
-
+               
                     // Apply prominent style (iOS 26+)
                     if action["prominent"] as? Bool == true {
                         if #available(iOS 26.0, *) {
@@ -243,7 +243,7 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
                         btn.tintColor = Self.colorFromARGB(n.intValue)
                         perActionTintTags.insert(index)
                     }
-
+        
                     // If no flexible spacer exists, all go to right
                     // If flexible exists, split by it
                     if !hasFlexible {
