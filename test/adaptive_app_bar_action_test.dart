@@ -234,5 +234,45 @@ void main() {
 
       expect(map['spacerAfter'], 2); // ToolbarSpacerType.flexible.index
     });
+
+    test('toNativeMap includes badge when present', () {
+      final action = AdaptiveAppBarAction(
+        iosSymbol: 'heart.fill',
+        badge: '9+',
+        onPressed: () {},
+      );
+
+      final map = action.toNativeMap();
+
+      expect(map['badge'], '9+');
+      expect(map.containsKey('indicator'), isFalse);
+    });
+
+    test('toNativeMap includes indicator when true', () {
+      final action = AdaptiveAppBarAction(
+        iosSymbol: 'bell',
+        indicator: true,
+        onPressed: () {},
+      );
+
+      final map = action.toNativeMap();
+
+      expect(map['indicator'], isTrue);
+      expect(map.containsKey('badge'), isFalse);
+    });
+
+    test('badge has priority semantics in payload when both are set', () {
+      final action = AdaptiveAppBarAction(
+        iosSymbol: 'heart.fill',
+        badge: '1',
+        indicator: true,
+        onPressed: () {},
+      );
+
+      final map = action.toNativeMap();
+
+      expect(map['badge'], '1');
+      expect(map['indicator'], isTrue);
+    });
   });
 }

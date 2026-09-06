@@ -56,6 +56,13 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
 
     private var isDark: Bool = false
     private var perActionTintTags: Set<Int> = []
+    private var actionBadges: [Int: [String: Any]] = [:]
+
+    private enum ActionBadgeState {
+        case none
+        case indicator
+        case text(String)
+    }
 
     init(
         frame: CGRect,
@@ -243,6 +250,16 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
                         btn.tintColor = Self.colorFromARGB(n.intValue)
                         perActionTintTags.insert(index)
                     }
+
+                    let badge = action["badge"] as? String
+                    let indicator = action["indicator"] as? Bool ?? false
+                    if let badgeText = badge {
+                        actionBadges[index] = ["state": ActionBadgeState.text(badgeText)]
+                    } else if indicator {
+                        actionBadges[index] = ["state": ActionBadgeState.indicator]
+                    } else {
+                        actionBadges[index] = ["state": ActionBadgeState.none]
+                    }
         
                     // If no flexible spacer exists, all go to right
                     // If flexible exists, split by it
@@ -279,7 +296,33 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
         // Assign to navigation item
         navigationItem.leftBarButtonItems = leadingItems + leftGroup
         navigationItem.rightBarButtonItems = rightGroup.reversed()
+        applyBadgesToVisibleItems()
     }
+
+    private func applyBadgesToVisibleItems() {
+        let allItems = (navigationItem.leftBarButtonItems ?? []) + (navigationItem.rightBarButtonItems ?? [])
+        for item in allItems {
+            guard let state = actionBadges[item.tag] else { continue }
+            let badgeState = state["state"] as? ActionBadgeState ?? .none
+            applyBadgeState(state: badgeState, to: item)
+        }
+    }
+
+    private func applyBadgeState(state: ActionBadgeState, to item: UIBarButtonItem) {
+        guard #available(iOS 26.0, *) else { return }
+
+        Task { @MainActor in
+            switch state {
+            case .none:
+                item.badge = nil
+            case .indicator:
+                item.badge = .indicator()
+            case .text(let value):
+                item.badge = .string(value)
+            }
+        }
+    }
+
 
     @objc private func leadingTapped() {
         channel.invokeMethod("onLeadingTapped", arguments: nil)
@@ -310,6 +353,7 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
         case "updateActions":
             if let args = call.arguments as? [String: Any] {
                 perActionTintTags.removeAll()
+                actionBadges.removeAll()
                 configureItems(args)
                 // Re-apply global tint to items without per-action tint
                 if let globalTint = navigationBar.tintColor {
@@ -321,6 +365,29 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
                 }
             }
             result(nil)
+        case "updateActionBadge":
+            if let args = call.arguments as? [String: Any],
+               let index = args["index"] as? Int {
+                let badge = args["badge"] as? String
+                let indicator = args["indicator"] as? Bool ?? false
+                let badgeState: ActionBadgeState
+                if let badgeText = badge {
+                    badgeState = .text(badgeText)
+                } else if indicator {
+                    badgeState = .indicator
+                } else {
+                    badgeState = .none
+                }
+                actionBadges[index] = ["state": badgeState]
+
+                let items = (navigationItem.leftBarButtonItems ?? []) + (navigationItem.rightBarButtonItems ?? [])
+                if let item = items.first(where: { $0.tag == index }) {
+                    applyBadgeState(state: badgeState, to: item)
+                }
+                result(nil)
+            } else {
+                result(FlutterMethodNotImplemented)
+            }
         case "setStyle":
             if let args = call.arguments as? [String: Any] {
                 if let tintValue = args["tint"] {

@@ -28,6 +28,8 @@ class AdaptiveAppBarAction {
     this.spacerAfter = ToolbarSpacerType.none,
     this.prominent = false,
     this.tintColor,
+    this.badge,
+    this.indicator = false,
   }) : assert(
          iosSymbol != null || icon != null || iconWidget != null || title != null,
          'At least one of iosSymbol, icon, iconWidget, or title must be provided',
@@ -83,6 +85,19 @@ class AdaptiveAppBarAction {
   /// - iOS <26 / Android: Ignored
   final Color? tintColor;
 
+  /// Badge text for iOS 26+ toolbar actions.
+  /// - null: no badge
+  /// - non-null: show badge text
+  /// - iOS <26 / Android: Ignored
+  final String? badge;
+
+  /// Show a dot indicator when [badge] is null (iOS 26+ only).
+  /// Defaults to false.
+  /// - true + badge == null: show indicator
+  /// - false + badge == null: no badge/indicator
+  /// - iOS <26 / Android: Ignored
+  final bool indicator;
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -92,11 +107,22 @@ class AdaptiveAppBarAction {
         other.iconWidget == iconWidget &&
         other.title == title &&
         other.prominent == prominent &&
-        other.tintColor == tintColor;
+        other.tintColor == tintColor &&
+        other.badge == badge &&
+        other.indicator == indicator;
   }
 
   @override
-  int get hashCode => Object.hash(iosSymbol, icon, iconWidget, title, prominent, tintColor);
+  int get hashCode => Object.hash(
+        iosSymbol,
+        icon,
+        iconWidget,
+        title,
+        prominent,
+        tintColor,
+        badge,
+        indicator,
+      );
 
   /// Convert action to map for native platform channel (iOS 26+ only)
   Map<String, dynamic> toNativeMap() {
@@ -106,6 +132,8 @@ class AdaptiveAppBarAction {
       'spacerAfter': spacerAfter.index, // 0=none, 1=fixed, 2=flexible
       if (prominent) 'prominent': true,
       if (tintColor != null) 'tint': tintColor!.toARGB32(),
+      if (badge != null) 'badge': badge,
+      if (indicator) 'indicator': true,
     };
   }
 }

@@ -13,6 +13,15 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
   int _selectedColorIndex = 0;
   int _checkmarkTintIndex = 2; // Green by default
   int _heartTintIndex = 1; // Red by default
+  String? _badgeText = '3';
+  bool _showIndicator = false;
+  final TextEditingController _badgeController = TextEditingController(text: '3');
+
+  @override
+  void dispose() {
+    _badgeController.dispose();
+    super.dispose();
+  }
 
   static const _tintOptions = <_TintOption>[
     _TintOption(name: 'Blue', color: Colors.blue),
@@ -61,6 +70,8 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
             icon: Icons.favorite,
             prominent: true,
             tintColor: _heartTint,
+            badge: _badgeText,
+            indicator: _showIndicator,
             onPressed: () {},
           ),
         ],
@@ -126,6 +137,41 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
             isDark: isDark,
             selectedIndex: _heartTintIndex,
             onChanged: (i) => setState(() => _heartTintIndex = i),
+          ),
+          const SizedBox(height: 12),
+          _buildSectionHeader(context, 'Badge / Indicator Demo', isDark),
+          const SizedBox(height: 8),
+          _buildDescription(
+            context,
+            'Heart action: badge text has priority. If badge is null and indicator is true, a dot indicator is shown.',
+            isDark,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: AdaptiveTextField(
+                  controller: _badgeController,
+                  placeholder: 'Badge text (empty = null)',
+                  onChanged: (v) {
+                    setState(() {
+                      final trimmed = v.trim();
+                      _badgeText = trimmed.isEmpty ? null : trimmed;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                children: [
+                  const Text('Indicator'),
+                  AdaptiveSwitch(
+                    value: _showIndicator,
+                    onChanged: (v) => setState(() => _showIndicator = v),
+                  ),
+                ],
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           _buildSectionHeader(context, 'Platform Behavior', isDark),
