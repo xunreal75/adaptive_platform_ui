@@ -58,12 +58,6 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
     private var perActionTintTags: Set<Int> = []
     private var actionBadges: [Int: [String: Any]] = [:]
 
-    private enum ActionBadgeState {
-        case none
-        case indicator
-        case text(String)
-    }
-
     init(
         frame: CGRect,
         viewIdentifier viewId: Int64,
@@ -251,15 +245,12 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
                         perActionTintTags.insert(index)
                     }
 
-                    let badge = action["badge"] as? String
-                    let indicator = action["indicator"] as? Bool ?? false
-                    if let badgeText = badge {
-                        actionBadges[index] = ["state": ActionBadgeState.text(badgeText)]
-                    } else if indicator {
-                        actionBadges[index] = ["state": ActionBadgeState.indicator]
-                    } else {
-                        actionBadges[index] = ["state": ActionBadgeState.none]
-                    }
+                    actionBadges[index] = [
+                        "badge": action["badge"] as Any,
+                        "indicator": action["indicator"] as? Bool ?? false,
+                        "badgeBackgroundColor": action["badgeBackgroundColor"] as Any,
+                        "badgeForegroundColor": action["badgeForegroundColor"] as Any
+                    ]
         
                     // If no flexible spacer exists, all go to right
                     // If flexible exists, split by it
@@ -303,25 +294,51 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
         let allItems = (navigationItem.leftBarButtonItems ?? []) + (navigationItem.rightBarButtonItems ?? [])
         for item in allItems {
             guard let state = actionBadges[item.tag] else { continue }
-            let badgeState = state["state"] as? ActionBadgeState ?? .none
-            applyBadgeState(state: badgeState, to: item)
+            let badge = state["badge"] as? String
+            let indicator = state["indicator"] as? Bool ?? false
+            let badgeBackgroundColor = (state["badgeBackgroundColor"] as? NSNumber).map { Self.colorFromARGB($0.intValue) }
+            let badgeForegroundColor = (state["badgeForegroundColor"] as? NSNumber).map { Self.colorFromARGB($0.intValue) }
+            applyBadgeState(
+                badge: badge,
+                indicator: indicator,
+                badgeBackgroundColor: badgeBackgroundColor,
+                badgeForegroundColor: badgeForegroundColor,
+                to: item
+            )
         }
     }
 
-    private func applyBadgeState(state: ActionBadgeState, to item: UIBarButtonItem) {
+    private func applyBadgeState(
+        badge: String?,
+        indicator: Bool,
+        badgeBackgroundColor: UIColor?,
+        badgeForegroundColor: UIColor?,
+        to item: UIBarButtonItem
+    ) {
         guard #available(iOS 26.0, *) else { return }
-
+        
         Task { @MainActor in
-            switch state {
-            case .none:
-                item.badge = nil
-            case .indicator:
+            // Badge setzen
+            if let badgeText = badge {
+                item.badge = .string(badgeText)
+            } else if indicator {
                 item.badge = .indicator()
-            case .text(let value):
-                item.badge = .string(value)
+            } else {
+                item.badge = nil
+            }
+            
+            // Farben setzen (nur wenn Badge existiert)
+            if item.badge != nil {
+                if let bg = badgeBackgroundColor {
+                    item.badge?.backgroundColor = bg
+                }
+                if let fg = badgeForegroundColor {
+                    item.badge?.foregroundColor = fg
+                }
             }
         }
     }
+
 
 
     @objc private func leadingTapped() {
@@ -370,19 +387,24 @@ class iOS26ToolbarPlatformView: NSObject, FlutterPlatformView {
                let index = args["index"] as? Int {
                 let badge = args["badge"] as? String
                 let indicator = args["indicator"] as? Bool ?? false
-                let badgeState: ActionBadgeState
-                if let badgeText = badge {
-                    badgeState = .text(badgeText)
-                } else if indicator {
-                    badgeState = .indicator
-                } else {
-                    badgeState = .none
-                }
-                actionBadges[index] = ["state": badgeState]
+                let badgeBackgroundColor = (args["badgeBackgroundColor"] as? NSNumber).map { Self.colorFromARGB($0.intValue) }
+                let badgeForegroundColor = (args["badgeForegroundColor"] as? NSNumber).map { Self.colorFromARGB($0.intValue) }
+                actionBadges[index] = [
+                    "badge": badge as Any,
+                    "indicator": indicator,
+                    "badgeBackgroundColor": args["badgeBackgroundColor"] as Any,
+                    "badgeForegroundColor": args["badgeForegroundColor"] as Any
+                ]
 
                 let items = (navigationItem.leftBarButtonItems ?? []) + (navigationItem.rightBarButtonItems ?? [])
                 if let item = items.first(where: { $0.tag == index }) {
-                    applyBadgeState(state: badgeState, to: item)
+                    applyBadgeState(
+                        badge: badge,
+                        indicator: indicator,
+                        badgeBackgroundColor: badgeBackgroundColor,
+                        badgeForegroundColor: badgeForegroundColor,
+                        to: item
+                    )
                 }
                 result(nil)
             } else {

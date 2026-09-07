@@ -274,5 +274,20 @@ void main() {
       expect(map['badge'], '1');
       expect(map['indicator'], isTrue);
     });
+
+    test('toNativeMap includes badge colors when present', () {
+      final action = AdaptiveAppBarAction(
+        iosSymbol: 'heart.fill',
+        badge: '7',
+        badgeBackgroundColor: Colors.red,
+        badgeForegroundColor: Colors.white,
+        onPressed: () {},
+      );
+
+      final map = action.toNativeMap();
+
+      expect(map['badgeBackgroundColor'], Colors.red.toARGB32());
+      expect(map['badgeForegroundColor'], Colors.white.toARGB32());
+    });
   });
 }

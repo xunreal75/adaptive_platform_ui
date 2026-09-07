@@ -30,6 +30,8 @@ class AdaptiveAppBarAction {
     this.tintColor,
     this.badge,
     this.indicator = false,
+    this.badgeBackgroundColor,
+    this.badgeForegroundColor,
   }) : assert(
          iosSymbol != null || icon != null || iconWidget != null || title != null,
          'At least one of iosSymbol, icon, iconWidget, or title must be provided',
@@ -98,6 +100,14 @@ class AdaptiveAppBarAction {
   /// - iOS <26 / Android: Ignored
   final bool indicator;
 
+  /// Badge background color for iOS 26+ toolbar actions.
+  /// Applied to native `item.badge?.backgroundColor`.
+  final Color? badgeBackgroundColor;
+
+  /// Badge foreground/text color for iOS 26+ toolbar actions.
+  /// Applied to native `item.badge?.foregroundColor`.
+  final Color? badgeForegroundColor;
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -109,7 +119,9 @@ class AdaptiveAppBarAction {
         other.prominent == prominent &&
         other.tintColor == tintColor &&
         other.badge == badge &&
-        other.indicator == indicator;
+        other.indicator == indicator &&
+        other.badgeBackgroundColor == badgeBackgroundColor &&
+        other.badgeForegroundColor == badgeForegroundColor;
   }
 
   @override
@@ -122,6 +134,8 @@ class AdaptiveAppBarAction {
         tintColor,
         badge,
         indicator,
+        badgeBackgroundColor,
+        badgeForegroundColor,
       );
 
   /// Convert action to map for native platform channel (iOS 26+ only)
@@ -134,6 +148,10 @@ class AdaptiveAppBarAction {
       if (tintColor != null) 'tint': tintColor!.toARGB32(),
       if (badge != null) 'badge': badge,
       if (indicator) 'indicator': true,
+      if (badgeBackgroundColor != null)
+        'badgeBackgroundColor': badgeBackgroundColor!.toARGB32(),
+      if (badgeForegroundColor != null)
+        'badgeForegroundColor': badgeForegroundColor!.toARGB32(),
     };
   }
 }

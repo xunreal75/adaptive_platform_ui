@@ -13,9 +13,13 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
   int _selectedColorIndex = 0;
   int _checkmarkTintIndex = 2; // Green by default
   int _heartTintIndex = 1; // Red by default
+  int _badgeBackgroundTintIndex = 1; // Red by default
+  int _badgeForegroundTintIndex = 5; // System default by default
   String? _badgeText = '3';
   bool _showIndicator = false;
-  final TextEditingController _badgeController = TextEditingController(text: '3');
+  final TextEditingController _badgeController = TextEditingController(
+    text: '3',
+  );
 
   @override
   void dispose() {
@@ -72,6 +76,8 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
             tintColor: _heartTint,
             badge: _badgeText,
             indicator: _showIndicator,
+            badgeBackgroundColor: _tintOptions[_badgeBackgroundTintIndex].color,
+            badgeForegroundColor: _tintOptions[_badgeForegroundTintIndex].color,
             onPressed: () {},
           ),
         ],
@@ -132,8 +138,7 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
             context,
             icon: Icons.favorite,
             title: 'Heart — Prominent + per-action tint',
-            description:
-                'Combines prominent: true with per-action tintColor.',
+            description: 'Combines prominent: true with per-action tintColor.',
             isDark: isDark,
             selectedIndex: _heartTintIndex,
             onChanged: (i) => setState(() => _heartTintIndex = i),
@@ -147,31 +152,48 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
             isDark,
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: AdaptiveTextField(
-                  controller: _badgeController,
-                  placeholder: 'Badge text (empty = null)',
-                  onChanged: (v) {
-                    setState(() {
-                      final trimmed = v.trim();
-                      _badgeText = trimmed.isEmpty ? null : trimmed;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                children: [
-                  const Text('Indicator'),
-                  AdaptiveSwitch(
-                    value: _showIndicator,
-                    onChanged: (v) => setState(() => _showIndicator = v),
-                  ),
-                ],
-              ),
-            ],
+          _buildBadgeActionInfo(
+            context,
+            icon: Icons.badge,
+            title: 'Badge / Indicator',
+            description:
+                'Badge text has priority. If badge is null and indicator is true, a dot indicator is shown.',
+            isDark: isDark,
+            badgeText: _badgeText,
+            onBadgeTextChanged: (v) {
+              setState(() {
+                _showIndicator =
+                    false; // Reset indicator when badge text changes
+                final trimmed = v.trim();
+                _badgeText = trimmed.isEmpty ? null : trimmed;
+              });
+            },
+            showIndicator: _showIndicator,
+            onIndicatorChanged: (v) => setState(() {
+              FocusManager.instance.primaryFocus?.unfocus();
+              v ? _badgeText = null : _badgeText = "3";
+              _badgeController.text = _badgeText ?? '';
+              _showIndicator = v;
+            }),
+          ),
+          const SizedBox(height: 12),
+          _buildActionInfoWithPicker(
+            context,
+            icon: Icons.invert_colors,
+            title: 'Badge background color',
+            description: 'iOS 26+ native badge backgroundColor',
+            isDark: isDark,
+            selectedIndex: _badgeBackgroundTintIndex,
+            onChanged: (i) => setState(() => _badgeBackgroundTintIndex = i),
+          ),
+          _buildActionInfoWithPicker(
+            context,
+            icon: Icons.text_fields,
+            title: 'Badge foreground color',
+            description: 'iOS 26+ native badge foregroundColor',
+            isDark: isDark,
+            selectedIndex: _badgeForegroundTintIndex,
+            onChanged: (i) => setState(() => _badgeForegroundTintIndex = i),
           ),
           const SizedBox(height: 24),
           _buildSectionHeader(context, 'Platform Behavior', isDark),
@@ -182,11 +204,7 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
     );
   }
 
-  Widget _buildSectionHeader(
-    BuildContext context,
-    String title,
-    bool isDark,
-  ) {
+  Widget _buildSectionHeader(BuildContext context, String title, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
@@ -202,11 +220,7 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
     );
   }
 
-  Widget _buildDescription(
-    BuildContext context,
-    String text,
-    bool isDark,
-  ) {
+  Widget _buildDescription(BuildContext context, String text, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
@@ -230,7 +244,8 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
       children: List.generate(_tintOptions.length, (index) {
         final option = _tintOptions[index];
         final isSelected = _selectedColorIndex == index;
-        final displayColor = option.color ??
+        final displayColor =
+            option.color ??
             (PlatformInfo.isIOS
                 ? CupertinoColors.systemBlue
                 : Theme.of(context).colorScheme.primary);
@@ -281,7 +296,9 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
                   option.name,
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                     color: isSelected
                         ? displayColor
                         : (isDark ? Colors.white : Colors.black87),
@@ -355,6 +372,117 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
     );
   }
 
+  Widget _buildBadgeActionInfo(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String description,
+    required bool isDark,
+    required String? badgeText,
+    required ValueChanged<String> onBadgeTextChanged,
+    required bool showIndicator,
+    required ValueChanged<bool> onIndicatorChanged,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? (PlatformInfo.isIOS
+                  ? CupertinoColors.darkBackgroundGray
+                  : Theme.of(context).colorScheme.surfaceContainerHighest)
+            : (PlatformInfo.isIOS
+                  ? CupertinoColors.white
+                  : Theme.of(context).colorScheme.surfaceContainerHighest),
+        borderRadius: BorderRadius.circular(12),
+        border: PlatformInfo.isIOS
+            ? Border.all(
+                color: isDark
+                    ? CupertinoColors.systemGrey4
+                    : CupertinoColors.separator,
+                width: 0.5,
+              )
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 24, color: Colors.blue),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.white54 : Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Badge content',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              SizedBox(
+                width: 150,
+                child: AdaptiveTextField(
+                  controller: _badgeController,
+                  placeholder: 'Badge text',
+                  onChanged: onBadgeTextChanged,
+                ),
+              ),
+            ],
+          ),
+
+          const Divider(height: 2),
+          const SizedBox(height: 5),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'show Indicator',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              AdaptiveSwitch(
+                value: showIndicator,
+                onChanged: onIndicatorChanged,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionInfoWithPicker(
     BuildContext context, {
     required IconData icon,
@@ -363,6 +491,14 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
     required bool isDark,
     required int selectedIndex,
     required ValueChanged<int> onChanged,
+    bool showTextInput = false,
+    TextEditingController? textController,
+    String? textLabel,
+    ValueChanged<String>? onTextChanged,
+    bool showSwitch = false,
+    bool? switchValue,
+    String? switchLabel,
+    ValueChanged<bool>? onSwitchChanged,
   }) {
     final actionColor = _tintOptions[selectedIndex].color ?? Colors.blue;
 
@@ -426,6 +562,48 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
             selectedIndex: selectedIndex,
             onChanged: onChanged,
           ),
+          if (showTextInput &&
+              textController != null &&
+              onTextChanged != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Text(
+                  textLabel ?? 'Badge',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: AdaptiveTextField(
+                    controller: textController,
+                    placeholder: 'Badge text (empty = null)',
+                    onChanged: onTextChanged,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (showSwitch && switchValue != null && onSwitchChanged != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  switchLabel ?? 'Indicator',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                AdaptiveSwitch(value: switchValue, onChanged: onSwitchChanged),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -452,7 +630,9 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
               height: 28,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: color ?? (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                color:
+                    color ??
+                    (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                 border: Border.all(
                   color: isSelected
                       ? (isDark ? Colors.white : Colors.black87)
