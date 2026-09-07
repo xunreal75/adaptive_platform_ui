@@ -465,7 +465,7 @@ class _ToolbarTintDemoPageState extends State<ToolbarTintDemoPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'show Indicator',
+                'Show indicator',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
